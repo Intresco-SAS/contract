@@ -200,11 +200,15 @@ class ContractLine(models.Model):
         if state == "upcoming":
             return [
                 "&",
+                ("display_type", "=", False),
+                "&",
                 ("date_start", ">", today),
                 ("is_canceled", "=", False),
             ]
         if state == "in-progress":
             return [
+                "&",
+                ("display_type", "=", False),
                 "&",
                 "&",
                 "&",
@@ -217,10 +221,14 @@ class ContractLine(models.Model):
                 ("is_auto_renew", "=", True),
                 "&",
                 ("is_auto_renew", "=", False),
+                "|",
+                ("termination_notice_date", "=", False),
                 ("termination_notice_date", ">", today),
             ]
         if state == "to-renew":
             return [
+                "&",
+                ("display_type", "=", False),
                 "&",
                 "&",
                 ("is_canceled", "=", False),
@@ -233,6 +241,8 @@ class ContractLine(models.Model):
             ]
         if state == "upcoming-close":
             return [
+                "&",
+                ("display_type", "=", False),
                 "&",
                 "&",
                 "&",
@@ -248,6 +258,8 @@ class ContractLine(models.Model):
         if state == "closed":
             return [
                 "&",
+                ("display_type", "=", False),
+                "&",
                 "&",
                 "&",
                 ("is_canceled", "=", False),
@@ -260,7 +272,7 @@ class ContractLine(models.Model):
                 ("manual_renew_needed", "=", False),
             ]
         if state == "canceled":
-            return [("is_canceled", "=", True)]
+            return ["&", ("display_type", "=", False), ("is_canceled", "=", True)]
         if not state:
             return [("display_type", "!=", False)]
 
@@ -611,19 +623,12 @@ class ContractLine(models.Model):
         return name
 
     def _update_recurring_next_date(self):
+        # FIXME: Change method name according to real updated field
+        # e.g.: _update_last_date_invoiced()
         for rec in self:
             last_date_invoiced = rec.next_period_date_end
-            recurring_next_date = rec.get_next_invoice_date(
-                last_date_invoiced + relativedelta(days=1),
-                rec.recurring_invoicing_type,
-                rec.recurring_invoicing_offset,
-                rec.recurring_rule_type,
-                rec.recurring_interval,
-                max_date_end=rec.date_end,
-            )
             rec.write(
                 {
-                    "recurring_next_date": recurring_next_date,
                     "last_date_invoiced": last_date_invoiced,
                 }
             )
